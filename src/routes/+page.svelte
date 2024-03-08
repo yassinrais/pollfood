@@ -118,7 +118,7 @@
 
 	$effect(() => {
 		update().then((res) => {
-			createSocket(res);
+			// createSocket(res);
 		});
 	});
 </script>
