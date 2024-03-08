@@ -9,13 +9,7 @@ export type Level = {
 export interface Item {
 	id: string;
 	count: number;
-	content: string;
-	pictures: Picture[];
-	score: number;
-}
-
-export interface Picture {
-	id: string;
 	filename: string;
 	url: string;
+	score: number;
 }

@@ -8,7 +8,9 @@
 	<div class="flex w-40 text-3xl font-thin items-center justify-center {level.style}">
 		<span>{level.name}</span>
 	</div>
-	<div class="flex flex-row items-center bg-black/20 w-full h-full overflow-x-auto">
+	<div
+		class="flex flex-row items-center bg-black/20 w-full h-full overflow-y-hidden overflow-x-auto"
+	>
 		<slot />
 	</div>
 </div>
