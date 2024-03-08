@@ -131,10 +131,12 @@
 
 <div class="flex flex-col flex-1 h-screen w-full">
 	{#each levels as level}
-		<LevelItem {level}>
-			{#each level.items as item}
-				<ItemCell {item} />
-			{/each}
-		</LevelItem>
+		{#key level.name}
+			<LevelItem {level}>
+				{#each level.items as item}
+					<ItemCell {item} />
+				{/each}
+			</LevelItem>
+		{/key}
 	{/each}
 </div>
