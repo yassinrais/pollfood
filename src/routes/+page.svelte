@@ -35,7 +35,7 @@
 						.sort((a, b) => b.score - a.score)
 				};
 			})
-			.sort((a, b) => a.max - b.max)
+			.sort((a, b) => b.max - a.max)
 	);
 
 	let ws: WebSocket;
