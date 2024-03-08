@@ -3,6 +3,8 @@
 	import ItemCell from '../components/ItemCell.svelte';
 	import LevelItem from '../components/LevelItem.svelte';
 
+	let { data } = $props();
+
 	let lvls = [
 		{ name: 'E', style: 'bg-green-200/90' },
 		{ name: 'D', style: 'bg-yellow-200/90' },
@@ -12,24 +14,28 @@
 		{ name: 'S', style: 'bg-red-500/90' }
 	];
 
-	let data: Item[] = $state([]);
+	let items: Item[] = data.data || [];
 
-	let minScore = $derived(Math.min(...data.map((d) => d.score)));
-	let maxScore = $derived(Math.max(...data.map((d) => d.score)));
+	let minScore = $derived(Math.min(...items.map((d) => d.score)));
+	let maxScore = $derived(Math.max(...items.map((d) => d.score)));
 	let lvlAvg = $derived((maxScore - minScore) / lvls.length + 1);
 
 	let levels: Level[] = $derived(
-		lvls.map((item, i) => {
-			const min = i * lvlAvg + minScore;
-			const max = (i + 1) * lvlAvg + minScore;
+		lvls
+			.map((item, i) => {
+				const min = i * lvlAvg + minScore;
+				const max = (i + 1) * lvlAvg + minScore;
 
-			return {
-				...item,
-				min,
-				max,
-				items: data.filter((i) => i.score >= min && i.score < max).sort((a, b) => b.score - a.score)
-			};
-		})
+				return {
+					...item,
+					min,
+					max,
+					items: items
+						.filter((i) => i.score >= min && i.score < max)
+						.sort((a, b) => b.score - a.score)
+				};
+			})
+			.sort((a, b) => a.max - b.max)
 	);
 
 	let ws: WebSocket;
@@ -53,9 +59,9 @@
 
 		ws = new WebSocket(`ws://localhost:4444?${params}`);
 
-		ws.onmessage = ({ data }) => {
-			console.log('message:', data);
-			if (data == 'open') {
+		ws.onmessage = ({ items }) => {
+			console.log('message:', items);
+			if (items == 'open') {
 				ws.send(
 					JSON.stringify([
 						'4',
@@ -72,7 +78,7 @@
 			}
 
 			try {
-				const parsed = JSON.parse(data);
+				const parsed = JSON.parse(items);
 				if (parsed?.[3] === 'diff') {
 					update();
 
@@ -87,7 +93,7 @@
 					);
 				}
 
-				if (data === '[null,"10","phoenix","phx_reply",{"status":"ok","response":{}}]') {
+				if (items === '[null,"10","phoenix","phx_reply",{"status":"ok","response":{}}]') {
 					setTimeout(() => {
 						ws.send(JSON.stringify([null, '10', 'phoenix', 'heartbeat', {}]));
 					}, 10000);
@@ -110,21 +116,21 @@
 		return fetch('./api')
 			.then((res) => res.json())
 			.then((res) => {
-				data = res.data;
+				items = res.data;
 				return res;
 			});
 	};
 	$effect(() => console.log(levels));
 
-	$effect(() => {
-		update().then((res) => {
-			// createSocket(res);
-		});
-	});
+	// $effect(() => {
+	// 	update().then((res) => {
+	// 		// createSocket(res);
+	// 	});
+	// });
 </script>
 
 <div class="flex flex-col flex-1 h-screen w-full">
-	{#each levels.reverse() as level}
+	{#each levels as level}
 		<LevelItem {level}>
 			{#each level.items as item}
 				<ItemCell {item} />
