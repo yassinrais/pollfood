@@ -5,7 +5,7 @@
 
 	let { data } = $props();
 
-	let lvls = [
+	const lvls = [
 		{ name: 'E', style: 'bg-green-200/90' },
 		{ name: 'D', style: 'bg-yellow-200/90' },
 		{ name: 'C', style: 'bg-yellow-500/90' },
@@ -129,7 +129,7 @@
 	// });
 </script>
 
-<div class="flex flex-col flex-1 h-screen w-full">
+<div class="flex flex-col h-screen overflow-hidden w-full">
 	{#each levels as level}
 		{#key level.name}
 			<LevelItem {level}>

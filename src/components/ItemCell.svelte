@@ -5,7 +5,7 @@
 	export let item: Item;
 </script>
 
-<div class="flex flex-row flex-grow max-w-44 h-full">
+<div class="overflow-hidden w-44 max-h-1/6">
 	{#each item.pictures as picture}
 		<Media file={picture.url} alt={picture.filename} class="w-full h-full object-cover" />
 	{/each}
