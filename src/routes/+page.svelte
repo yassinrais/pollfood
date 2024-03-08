@@ -1,2 +1,134 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script lang="ts">
+	import type { Item, Level } from '$lib/types';
+	import ItemCell from '../components/ItemCell.svelte';
+	import LevelItem from '../components/LevelItem.svelte';
+
+	let lvls = [
+		{ name: 'E', style: 'bg-green-200/90' },
+		{ name: 'D', style: 'bg-yellow-200/90' },
+		{ name: 'C', style: 'bg-yellow-500/90' },
+		{ name: 'B', style: 'bg-orange-400/90' },
+		{ name: 'A', style: 'bg-orange-500/90' },
+		{ name: 'S', style: 'bg-red-500/90' }
+	];
+
+	let data: Item[] = $state([]);
+
+	let minScore = $derived(Math.min(...data.map((d) => d.score)));
+	let maxScore = $derived(Math.max(...data.map((d) => d.score)));
+	let lvlAvg = $derived((maxScore - minScore) / lvls.length + 1);
+
+	let levels: Level[] = $derived(
+		lvls.map((item, i) => {
+			const min = i * lvlAvg + minScore;
+			const max = (i + 1) * lvlAvg + minScore;
+
+			return {
+				...item,
+				min,
+				max,
+				items: data.filter((i) => i.score >= min && i.score < max).sort((a, b) => b.score - a.score)
+			};
+		})
+	);
+
+	let ws: WebSocket;
+	const createSocket = async ({
+		csrfToken,
+		id,
+		sessionToken,
+		cookie,
+		staticToken
+	}: Record<string, string>) => {
+		const params = new URLSearchParams({
+			_csrf_token: csrfToken,
+			vsn: '2.0.0',
+			target: 'wss://foodpoll.devs.ma/live/websocket',
+			cookie: cookie,
+			_mounts: '0',
+			static: staticToken,
+			session: sessionToken,
+			id
+		});
+
+		ws = new WebSocket(`ws://localhost:4444?${params}`);
+
+		ws.onmessage = ({ data }) => {
+			console.log('message:', data);
+			if (data == 'open') {
+				ws.send(
+					JSON.stringify([
+						'4',
+						'4',
+						'lv:' + id,
+						'phx_join',
+						{
+							url: 'https://foodpoll.devs.ma/',
+							session: sessionToken
+						}
+					])
+				);
+				ws.send(JSON.stringify([null, '10', 'phoenix', 'heartbeat', {}]));
+			}
+
+			try {
+				const parsed = JSON.parse(data);
+				if (parsed?.[3] === 'diff') {
+					update();
+
+					ws.send(
+						JSON.stringify([
+							'4',
+							'14',
+							'lv:' + id,
+							'event',
+							{ type: 'click', event: 'poll', value: { value: '' } }
+						])
+					);
+				}
+
+				if (data === '[null,"10","phoenix","phx_reply",{"status":"ok","response":{}}]') {
+					setTimeout(() => {
+						ws.send(JSON.stringify([null, '10', 'phoenix', 'heartbeat', {}]));
+					}, 10000);
+				}
+			} catch (error) {}
+		};
+		ws.onclose = (closed) => {
+			console.log('closed : ', closed);
+		};
+		ws.onopen = () => {
+			console.log('socket open');
+		};
+
+		ws.onerror = (error) => {
+			console.log('error : ', error);
+		};
+	};
+
+	const update = async () => {
+		return fetch('./api')
+			.then((res) => res.json())
+			.then((res) => {
+				data = res.data;
+				return res;
+			});
+	};
+	$effect(() => console.log(levels));
+
+	$effect(() => {
+		update().then((res) => {
+			createSocket(res);
+		});
+	});
+</script>
+
+<div class="flex flex-col flex-1 h-screen w-full">
+	{#each levels.reverse() as level}
+		<LevelItem {level}>
+			{#each level.items as item}
+				<ItemCell {item} />
+			{/each}
+		</LevelItem>
+	{/each}
+</div>
